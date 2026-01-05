@@ -89,15 +89,16 @@
                     </div>
                 </div>
 
-                <div id="like-area" class="hidden mt-6 space-y-3">
-                    <button onclick="openYoutubeForLike()" class="w-full bg-blue-600 text-white py-4 rounded-3xl font-bold flex items-center justify-center gap-3">
-                        <i class="fab fa-youtube"></i> 1. OPEN VIDEO
-                    </button>
-                    <button id="verify-btn" onclick="verifyLike()" class="w-full bg-red-600 text-white py-5 rounded-3xl font-black shadow-lg shadow-red-100 flex items-center justify-center gap-3">
-                        <i class="fas fa-heart"></i> 2. VERIFY LIKE (+100 🪙)
-                    </button>
-                </div>
-            </div>
+               <div id="like-area" class="hidden mt-6 space-y-3">
+    <button onclick="openYoutubeForLike()" class="w-full bg-blue-600 text-white py-4 rounded-3xl font-bold flex items-center justify-center gap-3 active:scale-95 transition-transform">
+        <i class="fab fa-youtube"></i> 1. OPEN VIDEO
+    </button>
+    
+    <button id="verify-btn" onclick="verifyLike()" disabled class="w-full bg-red-600 text-white py-5 rounded-3xl font-black shadow-lg opacity-50 cursor-not-allowed flex items-center justify-center gap-3 transition-all">
+        <i class="fas fa-heart"></i> 2. VERIFY LIKE (+100 🪙)
+    </button>
+</div>
+
 
        
             <div id="tab-buy" class="tab-content hidden w-full max-w-sm">
@@ -189,7 +190,7 @@
             <button id="btn-admin" onclick="switchTab('admin')" class="hidden nav-btn flex flex-col items-center p-2 text-black-600"><i class="fas fa-user-shield text-lg"></i><span class="text-[10px] mt-1 font-bold">ADMIN</span></button>
         </nav>
     </div>
-
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -305,21 +306,53 @@
         function stopCounter() { clearInterval(timerId); timerId = null; }
         window.startVideo = () => { if(player) player.playVideo(); document.getElementById('play-btn').classList.add('hidden'); };
 
-        // --- LIKE SYSTEM ---
-        window.openYoutubeForLike = () => {
-            window.open(`https://www.youtube.com/watch?v=${currentVideoId}`, '_blank');
-        };
+       // --- LIKE SYSTEM LOGIC ---
 
-        window.verifyLike = async () => {
-            const btn = document.getElementById('verify-btn');
-            btn.disabled = true; btn.innerHTML = "Verifying...";
-            setTimeout(async () => {
-                await updateDoc(doc(db, "users", currentUID), { Coins: increment(100) });
-                alert("Verified! +100 Coins");
-                refreshCoins(); loadNextVideo();
-                btn.disabled = false; btn.innerHTML = '<i class="fas fa-heart"></i> 2. VERIFY LIKE (+100 🪙)';
-            }, 3000);
-        };
+window.openYoutubeForLike = () => {
+    // 1. YouTube link open karein
+    window.open(`https://www.youtube.com/watch?v=${currentVideoId}`, '_blank');
+    
+    // 2. Verify button ko active karein
+    const vBtn = document.getElementById('verify-btn');
+    vBtn.disabled = false;
+    vBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    vBtn.classList.add('opacity-100');
+};
+
+window.verifyLike = async () => {
+    const btn = document.getElementById('verify-btn');
+    
+    // Clicking ke baad turant disable karein (safety)
+    btn.disabled = true;
+    btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Verifying...";
+
+    // 3 Second ka wait verification ke liye
+    setTimeout(async () => {
+        try {
+            // Coins update logic
+            await updateDoc(doc(db, "users", currentUID), { 
+                Coins: increment(100) 
+            });
+            
+            alert("Verified! +100 Coins Added ✅");
+            refreshCoins();
+            
+            // Naya video load karein
+            await loadNextVideo(); 
+            
+            // Agle video ke liye button reset karein
+            btn.innerHTML = '<i class="fas fa-heart"></i> 2. VERIFY LIKE (+100 🪙)';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            // Note: loadNextVideo() ke andar bhi btn.disabled = true hona chahiye
+            
+        } catch (error) {
+            alert("Error: " + error.message);
+            btn.disabled = false;
+            btn.innerHTML = "Retry Verification";
+        }
+    }, 3000);
+};
+
 
         // --- BUY / ORDERS ---
         window.submitOrder = async () => {
