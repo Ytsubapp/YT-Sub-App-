@@ -247,50 +247,38 @@
         window.openYoutubeForLike = () => {
     if(!currentVideoId) return alert("Video load nahi hui!");
 
-    const webUrl = `https://www.youtube.com/watch?v=${currentVideoId}`;
-    const appUrl = `vnd.youtube:${currentVideoId}`;
-    const shortUrl = `https://youtu.be/${currentVideoId}`;
+    // Video ID ko saaf karein (kabhi kabhi extra spaces error dete hain)
+    const vidId = currentVideoId.trim();
 
-    // Ek hidden link banakar click karenge (Ye zyada compatible hai)
-    const link = document.createElement('a');
+    // 1. Android Intent: Ye Direct App ke andar sahi video kholta hai
+    const androidIntent = `intent://www.youtube.com/watch?v=${vidId}#Intent;package=com.google.android.youtube;scheme=https;end`;
     
-    // Android/iOS detection
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    // 2. iOS/Universal Link: Ye unavailable error se bachata hai
+    const universalLink = `https://www.youtube.com/watch?v=${vidId}`;
 
-    if (isMobile) {
-        // Method 1: Try App Protocol
-        window.location.href = appUrl;
+    // Browser check
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    if (isAndroid) {
+        // Android par Intent use karein, agar fail ho toh link par jaye
+        window.location.href = androidIntent;
         
-        // Method 2: Agar 500ms tak app nahi khuli, toh Short URL use karo
+        // Backup: Agar intent 1 second mein kaam nahi kiya toh browser link khole
         setTimeout(() => {
-            if (!document.hidden) {
-                window.location.href = shortUrl;
-            }
-        }, 500);
-        
-        // Method 3: Final fallback to browser
-        setTimeout(() => {
-            if (!document.hidden) {
-                window.open(webUrl, '_blank');
-            }
-        }, 1500);
+            window.open(universalLink, '_blank');
+        }, 1000);
     } else {
-        window.open(webUrl, '_blank');
+        // iPhone ya PC ke liye direct link
+        window.open(universalLink, '_blank');
     }
 
-    // Verify button enable karein
+    // Verify button ko active karein
     const btn = document.getElementById('verify-btn');
     btn.disabled = false; 
     btn.classList.remove('opacity-50', 'cursor-not-allowed');
     btn.classList.add('bg-green-600');
 };
 
-    // Verify button activate karein
-    const btn = document.getElementById('verify-btn');
-    btn.disabled = false; 
-    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-    btn.classList.add('bg-green-600');
-};
 
 
         // --- TAB SWITCHING ---
